@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema de Vendas - Eletrodomésticos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    header { background: #222; color: #fff; padding: 15px; text-align: center; }
+    main { padding: 20px; }
+    h2 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    input, button, select { padding: 8px; margin: 5px 0; }
+    .card { background: #fff; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .actions button { margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sistema de Vendas - Eletrodomésticos</h1>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Cadastrar Produto</h2>
+      <input id="nome" placeholder="Nome do produto">
+      <input id="categoria" placeholder="Categoria">
+      <input id="preco" type="number" placeholder="Preço">
+      <input id="estoque" type="number" placeholder="Estoque">
+      <button onclick="cadastrarProduto()">Cadastrar</button>
+    </div>
+
+    <div class="card">
+      <h2>Produtos</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="listaProdutos"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Vendas</h2>
+      <select id="produtoVenda"></select>
+      <input id="qtdVenda" type="number" placeholder="Quantidade">
+      <button onclick="realizarVenda()">Vender</button>
+
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Produto</th><th>Quantidade</th><th>Total</th><th>Data</th></tr>
+        </thead>
+        <tbody id="listaVendas"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+    let vendas = JSON.parse(localStorage.getItem('vendas')) || [];
+
+    function salvarDados() {
+      localStorage.setItem('produtos', JSON.stringify(produtos));
+      localStorage.setItem('vendas', JSON.stringify(vendas));
+    }
+
+    function renderizarProdutos() {
+      const lista = document.getElementById('listaProdutos');
+      const select = document.getElementById('produtoVenda');
+      lista.innerHTML = '';
+      select.innerHTML = '';
+
+      produtos.forEach(p => {
+        lista.innerHTML += `<tr>
+          <td>${p.id}</td><td>${p.nome}</td><td>${p.categoria}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td>
+          <td class="actions"><button onclick="removerProduto(${p.id})">Excluir</button></td>
+        </tr>`;
+
+        select.innerHTML += `<option value="${p.id}">${p.nome} (Estoque: ${p.estoque})</option>`;
+      });
+    }
+
+    function renderizarVendas() {
+      const lista = document.getElementById('listaVendas');
+      lista.innerHTML = '';
+      vendas.forEach(v => {
+        lista.innerHTML += `<tr>
+          <td>${v.id}</td><td>${v.produto}</td><td>${v.qtd}</td><td>R$ ${v.total.toFixed(2)}</td><td>${v.data}</td>
+        </tr>`;
+      });
+    }
+
+    function cadastrarProduto() {
+      const nome = document.getElementById('nome').value;
+      const categoria = document.getElementById('categoria').value;
+      const preco = parseFloat(document.getElementById('preco').value);
+      const estoque = parseInt(document.getElementById('estoque').value);
+
+      if (!nome || isNaN(preco) || isNaN(estoque)) {
+        alert('Preencha todos os campos corretamente.');
+        return;
+      }
+
+      const id = produtos.length ? produtos[produtos.length-1].id + 1 : 1;
+      produtos.push({ id, nome, categoria, preco, estoque });
+      salvarDados();
+      renderizarProdutos();
+    }
+
+    function removerProduto(id) {
+      produtos = produtos.filter(p => p.id !== id);
+      salvarDados();
+      renderizarProdutos();
+    }
+
+    function realizarVenda() {
+      const produtoId = parseInt(document.getElementById('produtoVenda').value);
+      const qtd = parseInt(document.getElementById('qtdVenda').value);
+      const produto = produtos.find(p => p.id === produtoId);
+
+      if (!produto || qtd <= 0 || qtd > produto.estoque) {
+        alert('Venda inválida.');
+        return;
+      }
+
+      produto.estoque -= qtd;
+      const total = produto.preco * qtd;
+      const id = vendas.length ? vendas[vendas.length-1].id + 1 : 1;
+      vendas.push({ id, produto: produto.nome, qtd, total, data: new Date().toLocaleString() });
+
+      salvarDados();
+      renderizarProdutos();
+      renderizarVendas();
+    }
+
+    renderizarProdutos();
+    renderizarVendas();
+  </script>
+</body>
+</html>
